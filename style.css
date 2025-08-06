@@ -90,6 +90,41 @@ button:hover {
     transition: opacity 0.3s;
 }
 
+.progress-container {
+    width: 100%;
+    margin-top: 20px;
+    text-align: center;
+}
+
+#progressBar {
+    width: 80%;
+    height: 20px;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 1px solid #007bff;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+#progressBar::-webkit-progress-bar {
+    background-color: #e0e0e0;
+}
+
+#progressBar::-webkit-progress-value {
+    background-color: #007bff;
+}
+
+#progressBar::-moz-progress-bar {
+    background-color: #007bff;
+}
+
+#statusMessage {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.9em;
+    color: #555;
+}
+
 .debug-output {
     margin-top: 30px;
     padding: 20px;
