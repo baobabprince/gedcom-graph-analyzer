@@ -1180,6 +1180,46 @@ document.addEventListener('DOMContentLoaded', () => {
         return maxPathLength;
     }
 
+    function calculateAverageDistance(graph) {
+        console.log('calculateAverageDistance: Starting. Graph nodes count:', graph.nodes.length);
+        let totalDistance = 0;
+        let numPairs = 0;
+        const nodes = graph.nodes;
+
+        if (nodes.length === 0) {
+            console.log('calculateAverageDistance: No nodes, average distance is 0.');
+            return 0;
+        }
+
+        for (let i = 0; i < nodes.length; i++) {
+            const startNode = nodes[i];
+            const distances = new Map();
+            const queue = [{ node: startNode, dist: 0 }];
+            distances.set(startNode, 0);
+
+            let head = 0;
+            while (head < queue.length) {
+                const { node, dist } = queue[head++];
+
+                if (node !== startNode) {
+                    totalDistance += dist;
+                    numPairs++;
+                }
+
+                graph.adj.get(node).forEach(neighbor => {
+                    if (!distances.has(neighbor)) {
+                        distances.set(neighbor, dist + 1);
+                        queue.push({ node: neighbor, dist: dist + 1 });
+                    }
+                });
+            }
+        }
+
+        const average = numPairs > 0 ? totalDistance / numPairs : 0;
+        console.log('calculateAverageDistance: Finished. Total distance:', totalDistance, 'Num pairs:', numPairs, 'Average:', average);
+        return average;
+    }
+
 
     function displayReport(report) {
         const individuals = report.individuals; // Get individuals data from report
@@ -1205,6 +1245,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <strong>Longest Path (Approximation):</strong>
                     <span class="tooltip">${report.longestPath}
                         <span class="tooltiptext">The maximum number of unique relationships in a single, non-repeating chain of individuals within the family tree. This is an approximation for general graphs.</span>
+                    </span>
+                </p>
+                <p>
+                    <strong>Average Distance:</strong>
+                    <span class="tooltip">${report.averageDistance.toFixed(2)}
+                        <span class="tooltiptext">The average shortest path length between all pairs of reachable individuals in the family tree.</span>
                     </span>
                 </p>
 
@@ -1255,6 +1301,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             html += `</ul>`;
 
-            resultsDiv.innerHTML = html;
+            html += `
+                </div>
+            </div>
+        `;
+
+        resultsDiv.innerHTML = html;
     }
-});
