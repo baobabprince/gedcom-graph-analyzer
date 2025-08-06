@@ -101,43 +101,61 @@ document.addEventListener('DOMContentLoaded', () => {
         // In a real application, you'd use a robust GEDCOM parser library.
         const individuals = {};
         const families = {};
-        const relationships = []; // To build the graph
 
         const lines = gedcomContent.split(/\r?\n/);
+
+        // First Pass: Identify all INDI and FAM records and initialize them
+        lines.forEach(line => {
+            const trimmedLine = line.trim();
+            if (!trimmedLine) return;
+
+            const parts = trimmedLine.match(/^(\d+)\s+(@[^@]+@)?\s*(\w+)(?:\s+(.*))?$/);
+            if (!parts) return;
+
+            const level = parseInt(parts[1]);
+            const xrefId = parts[2];
+            const tag = parts[3];
+
+            if (level === 0) {
+                if (tag === 'INDI') {
+                    individuals[xrefId] = { id: xrefId, name: 'Unknown', sex: 'U', families: { spouse: [], child: [] } };
+                } else if (tag === 'FAM') {
+                    families[xrefId] = { id: xrefId, husband: null, wife: null, children: [] };
+                }
+            }
+        });
+
+        // Second Pass: Populate details and relationships
         let currentRecord = null;
         let currentRecordType = null;
 
         lines.forEach(line => {
             const trimmedLine = line.trim();
-            if (!trimmedLine) return; // Skip empty lines
+            if (!trimmedLine) return;
 
             const parts = trimmedLine.match(/^(\d+)\s+(@[^@]+@)?\s*(\w+)(?:\s+(.*))?$/);
             if (!parts) {
-                console.warn("Skipping malformed GEDCOM line:", trimmedLine);
+                console.warn("Skipping malformed GEDCOM line during second pass:", trimmedLine);
                 return;
             }
 
             const level = parseInt(parts[1]);
-            const xrefId = parts[2]; // Can be undefined
+            const xrefId = parts[2];
             const tag = parts[3];
-            const value = parts[4] ? parts[4].trim() : ''; // Can be undefined
+            const value = parts[4] ? parts[4].trim() : '';
 
             if (level === 0) {
-                // New top-level record
                 if (tag === 'INDI') {
                     currentRecordType = 'INDI';
                     currentRecord = xrefId;
-                    individuals[xrefId] = { id: xrefId, name: 'Unknown', sex: 'U', families: { spouse: [], child: [] } };
                 } else if (tag === 'FAM') {
                     currentRecordType = 'FAM';
                     currentRecord = xrefId;
-                    families[xrefId] = { id: xrefId, husband: null, wife: null, children: [] };
                 } else {
                     currentRecordType = null;
                     currentRecord = null;
                 }
             } else if (currentRecordType === 'INDI' && currentRecord) {
-                // Inside an INDI record
                 if (tag === 'NAME') {
                     individuals[currentRecord].name = value;
                 } else if (tag === 'SEX') {
@@ -172,7 +190,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const diameter = calculateDiameter(graph);
         const longestPath = calculateLongestPath(graph);
 
-        console.log('analyzeGedcom: returning report with individuals', individuals);
         return {
             totalIndividuals: Object.keys(individuals).length,
             connectivity,
