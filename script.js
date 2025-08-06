@@ -2,106 +2,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const gedcomFile = document.getElementById('gedcomFile');
     const loadSampleButton = document.getElementById('loadSampleButton');
     const resultsDiv = document.getElementById('results');
-    const debugLogElement = document.getElementById('debugLog');
-
-    // Redirect console.log to the debug output element
-    const originalConsoleLog = console.log;
-    console.log = function(...args) {
-        originalConsoleLog.apply(console, args);
-        const message = args.map(arg => {
-            if (typeof arg === 'object') {
-                return JSON.stringify(arg, null, 2);
-            } else {
-                return String(arg);
-            }
-        }).join(' ');
-        debugLogElement.textContent += message + '\n';
-        debugLogElement.scrollTop = debugLogElement.scrollHeight; // Auto-scroll to bottom
-    };
-
-    // Redirect console.warn and console.error as well
-    const originalConsoleWarn = console.warn;
-    console.warn = function(...args) {
-        originalConsoleWarn.apply(console, args);
-        const message = 'WARN: ' + args.map(arg => {
-            if (typeof arg === 'object') {
-                return JSON.stringify(arg, null, 2);
-            } else {
-                return String(arg);
-            }
-        }).join(' ');
-        debugLogElement.textContent += message + '\n';
-        debugLogElement.scrollTop = debugLogElement.scrollHeight;
-    };
-
-    const originalConsoleError = console.error;
-    console.error = function(...args) {
-        originalConsoleError.apply(console, args);
-        const message = 'ERROR: ' + args.map(arg => {
-            if (typeof arg === 'object') {
-                return JSON.stringify(arg, null, 2);
-            } else {
-                return String(arg);
-            }
-        }).join(' ');
-        debugLogElement.textContent += message + '\n';
-        debugLogElement.scrollTop = debugLogElement.scrollHeight;
-    };
-    const debugLogElement = document.getElementById('debugLog');
-
-    // Redirect console.log to the debug output element
-    const originalConsoleLog = console.log;
-    console.log = function(...args) {
-        originalConsoleLog.apply(console, args);
-        const message = args.map(arg => {
-            if (typeof arg === 'object') {
-                return JSON.stringify(arg, null, 2);
-            } else {
-                return String(arg);
-            }
-        }).join(' ');
-        debugLogElement.textContent += message + '\n';
-        debugLogElement.scrollTop = debugLogElement.scrollHeight; // Auto-scroll to bottom
-    };
-
-    // Redirect console.warn and console.error as well
-    const originalConsoleWarn = console.warn;
-    console.warn = function(...args) {
-        originalConsoleWarn.apply(console, args);
-        const message = 'WARN: ' + args.map(arg => {
-            if (typeof arg === 'object') {
-                return JSON.stringify(arg, null, 2);
-            } else {
-                return String(arg);
-            }
-        }).join(' ');
-        debugLogElement.textContent += message + '\n';
-        debugLogElement.scrollTop = debugLogElement.scrollHeight;
-    };
-
-    const originalConsoleError = console.error;
-    console.error = function(...args) {
-        originalConsoleError.apply(console, args);
-        const message = 'ERROR: ' + args.map(arg => {
-            if (typeof arg === 'object') {
-                return JSON.stringify(arg, null, 2);
-            } else {
-                return String(arg);
-            }
-        }).join(' ');
-        debugLogElement.textContent += message + '\n';
-        debugLogElement.scrollTop = debugLogElement.scrollHeight;
-    };
+    const debugLogElement = document.getElementById('debugLog'); // Keep this for now, will be empty
 
     gedcomFile.addEventListener('change', () => {
+        console.log('File input changed.');
+        resultsDiv.innerHTML = ''; // Clear previous results
+        debugLogElement.textContent = ''; // Clear debug log
+        
         const file = gedcomFile.files[0];
         if (!file) {
             resultsDiv.innerHTML = '<p style="color: red;">Please select a GEDCOM file.</p>';
+            console.log('No file selected.');
             return;
         }
 
+        console.log('File selected:', file.name);
         const reader = new FileReader();
         reader.onload = (e) => {
+            console.log('File loaded.');
             const gedcomContent = e.target.result;
             try {
                 const report = analyzeGedcom(gedcomContent);
@@ -113,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         reader.onerror = () => {
             resultsDiv.innerHTML = '<p style="color: red;">Error reading file.</p>';
+            console.error('Error reading file.');
         };
         reader.readAsText(file);
     });
@@ -332,6 +251,9 @@ document.addEventListener('DOMContentLoaded', () => {
 `;
 
     loadSampleButton.addEventListener('click', () => {
+        console.log('Load Sample Data button clicked.');
+        resultsDiv.innerHTML = ''; // Clear previous results
+        debugLogElement.textContent = ''; // Clear debug log
         try {
             const report = analyzeGedcom(sampleGedcomData);
             displayReport(report);
@@ -347,9 +269,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const individuals = {};
         const families = {};
 
+        console.log('analyzeGedcom: individuals initialized', individuals);
+        console.log('analyzeGedcom: families initialized', families);
+
         const lines = gedcomContent.split(/\r?\n/);
 
         // First Pass: Identify all INDI and FAM records and initialize them
+        console.log('analyzeGedcom: Starting first pass (identifying records)');
         lines.forEach(line => {
             const trimmedLine = line.trim();
             if (!trimmedLine) return;
@@ -364,13 +290,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (level === 0) {
                 if (tag === 'INDI') {
                     individuals[xrefId] = { id: xrefId, name: 'Unknown', sex: 'U', families: { spouse: [], child: [] } };
+                    console.log('First Pass: Parsed INDI:', xrefId, individuals[xrefId]);
                 } else if (tag === 'FAM') {
                     families[xrefId] = { id: xrefId, husband: null, wife: null, children: [] };
+                    console.log('First Pass: Parsed FAM:', xrefId, families[xrefId]);
                 }
             }
         });
+        console.log('analyzeGedcom: First pass complete. Individuals:', individuals, 'Families:', families);
 
         // Second Pass: Populate details and relationships
+        console.log('analyzeGedcom: Starting second pass (populating details)');
         let currentRecord = null;
         let currentRecordType = null;
 
@@ -407,31 +337,46 @@ document.addEventListener('DOMContentLoaded', () => {
                     individuals[currentRecord].sex = value;
                 } else if (tag === 'FAMS') { // Family as Spouse
                     individuals[currentRecord].families.spouse.push(value);
+                    console.log('Second Pass: Processing FAMS for', currentRecord, '->', value, 'Individual exists:', !!individuals[value]);
                 } else if (tag === 'FAMC') { // Family as Child
                     individuals[currentRecord].families.child.push(value);
+                    console.log('Second Pass: Processing FAMC for', currentRecord, '->', value, 'Individual exists:', !!individuals[value]);
                 }
             } else if (currentRecordType === 'FAM' && currentRecord) {
                 // Inside a FAM record
                 if (tag === 'HUSB') {
                     families[currentRecord].husband = value;
+                    console.log('Second Pass: Processing FAM HUSB:', currentRecord, '->', value, 'Individual exists:', !!individuals[value]);
                 } else if (tag === 'WIFE') {
                     families[currentRecord].wife = value;
+                    console.log('Second Pass: Processing FAM WIFE:', currentRecord, '->', value, 'Individual exists:', !!individuals[value]);
                 } else if (tag === 'CHIL') {
                     families[currentRecord].children.push(value);
+                    console.log('Second Pass: Processing FAM CHIL:', currentRecord, '->', value, 'Individual exists:', !!individuals[value]);
                 }
             }
         });
+        console.log('analyzeGedcom: Second pass complete. Individuals:', individuals, 'Families:', families);
 
         // Build graph for analysis
         const graph = buildGraph(individuals, families);
+        console.log('analyzeGedcom: Graph built', graph);
 
         // Perform graph theory calculations
         const connectivity = calculateConnectivity(graph);
         const centrality = calculateCentrality(graph);
-        const { mostAncestors, mostDescendants } = calculateAncestorsDescendants(graph, individuals);
+        const { mostAncestors, mostDescendants, allAncestorCounts, allDescendantCounts } = calculateAncestorsDescendants(graph, individuals);
+        
+        // Store ancestor and descendant counts directly on individual objects
+        for (const id in individuals) {
+            individuals[id].ancestorCount = allAncestorCounts[id] || 0;
+            individuals[id].descendantCount = allDescendantCounts[id] || 0;
+        }
+
         const diameter = calculateDiameter(graph);
         const longestPath = calculateLongestPath(graph);
 
+        console.log('analyzeGedcom: returning report');
         return {
             totalIndividuals: Object.keys(individuals).length,
             connectivity,
@@ -577,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .slice(0, 5)
             .map(([id, score]) => ({ id, score }));
 
-        return { mostAncestors, mostDescendants };
+        return { mostAncestors, mostDescendants, allAncestorCounts: ancestorCounts, allDescendantCounts: descendantCounts };
     }
 
     function calculateDiameter(graph) {
@@ -639,7 +584,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function displayReport(report) {
+        console.log('displayReport: report received', report);
         const individuals = report.individuals; // Get individuals data from report
+        console.log('displayReport: individuals from report', individuals);
         let html = `
             <div class="report-section-content">
                 <h3>Summary</h3>
