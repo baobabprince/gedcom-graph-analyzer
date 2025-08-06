@@ -4,6 +4,121 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultsDiv = document.getElementById('results');
     const progressBar = document.getElementById('progressBar');
     const statusMessage = document.getElementById('statusMessage');
+    const debugLogElement = document.getElementById('debugLog');
+
+    // Clear debug log on page load
+    if (debugLogElement) {
+        debugLogElement.textContent = '';
+    }
+
+    // Redirect console.log to the debug output element
+    const originalConsoleLog = console.log;
+    console.log = function(...args) {
+        originalConsoleLog.apply(console, args);
+        const message = args.map(arg => {
+            if (typeof arg === 'object') {
+                return JSON.stringify(arg, null, 2);
+            } else {
+                return String(arg);
+            }
+        }).join(' ');
+        if (debugLogElement) {
+            debugLogElement.textContent += message + '\n';
+            debugLogElement.scrollTop = debugLogElement.scrollHeight; // Auto-scroll to bottom
+        }
+    };
+
+    // Redirect console.warn and console.error as well
+    const originalConsoleWarn = console.warn;
+    console.warn = function(...args) {
+        originalConsoleWarn.apply(console, args);
+        const message = 'WARN: ' + args.map(arg => {
+            if (typeof arg === 'object') {
+                return JSON.stringify(arg, null, 2);
+            } else {
+                return String(arg);
+            }
+        }).join(' ');
+        if (debugLogElement) {
+            debugLogElement.textContent += message + '\n';
+            debugLogElement.scrollTop = debugLogElement.scrollHeight;
+        }
+    };
+
+    const originalConsoleError = console.error;
+    console.error = function(...args) {
+        originalConsoleError.apply(console, args);
+        const message = 'ERROR: ' + args.map(arg => {
+            if (typeof arg === 'object') {
+                return JSON.stringify(arg, null, 2);
+            } else {
+                return String(arg);
+            }
+        }).join(' ');
+        if (debugLogElement) {
+            debugLogElement.textContent += message + '\n';
+            debugLogElement.scrollTop = debugLogElement.scrollHeight;
+        }
+    };
+
+    const debugLogElement = document.getElementById('debugLog');
+
+    // Clear debug log on page load
+    if (debugLogElement) {
+        debugLogElement.textContent = '';
+    }
+
+    // Redirect console.log to the debug output element
+    const originalConsoleLog = console.log;
+    console.log = function(...args) {
+        originalConsoleLog.apply(console, args);
+        const message = args.map(arg => {
+            if (typeof arg === 'object') {
+                return JSON.stringify(arg, null, 2);
+            } else {
+                return String(arg);
+            }
+        }).join(' ');
+        if (debugLogElement) {
+            debugLogElement.textContent += message + '\n';
+            debugLogElement.scrollTop = debugLogElement.scrollHeight; // Auto-scroll to bottom
+        }
+    };
+
+    // Redirect console.warn and console.error as well
+    const originalConsoleWarn = console.warn;
+    console.warn = function(...args) {
+        originalConsoleWarn.apply(console, args);
+        const message = 'WARN: ' + args.map(arg => {
+            if (typeof arg === 'object') {
+                return JSON.stringify(arg, null, 2);
+            } else {
+                return String(arg);
+            }
+        }).join(' ');
+        if (debugLogElement) {
+            debugLogElement.textContent += message + '\n';
+            debugLogElement.scrollTop = debugLogElement.scrollHeight;
+        }
+    };
+
+    const originalConsoleError = console.error;
+    console.error = function(...args) {
+        originalConsoleError.apply(console, args);
+        const message = 'ERROR: ' + args.map(arg => {
+            if (typeof arg === 'object') {
+                return JSON.stringify(arg, null, 2);
+            } else {
+                return String(arg);
+            }
+        }).join(' ');
+        if (debugLogElement) {
+            debugLogElement.textContent += message + '\n';
+            debugLogElement.scrollTop = debugLogElement.scrollHeight;
+        }
+    };
+
+
 
     gedcomFile.addEventListener('change', () => {
         resultsDiv.innerHTML = ''; // Clear previous results
