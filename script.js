@@ -2,6 +2,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const gedcomFile = document.getElementById('gedcomFile');
     const loadSampleButton = document.getElementById('loadSampleButton');
     const resultsDiv = document.getElementById('results');
+    const debugLogElement = document.getElementById('debugLog');
+
+    // Redirect console.log to the debug output element
+    const originalConsoleLog = console.log;
+    console.log = function(...args) {
+        originalConsoleLog.apply(console, args);
+        const message = args.map(arg => {
+            if (typeof arg === 'object') {
+                return JSON.stringify(arg, null, 2);
+            } else {
+                return String(arg);
+            }
+        }).join(' ');
+        debugLogElement.textContent += message + '\n';
+        debugLogElement.scrollTop = debugLogElement.scrollHeight; // Auto-scroll to bottom
+    };
+
+    // Redirect console.warn and console.error as well
+    const originalConsoleWarn = console.warn;
+    console.warn = function(...args) {
+        originalConsoleWarn.apply(console, args);
+        const message = 'WARN: ' + args.map(arg => {
+            if (typeof arg === 'object') {
+                return JSON.stringify(arg, null, 2);
+            } else {
+                return String(arg);
+            }
+        }).join(' ');
+        debugLogElement.textContent += message + '\n';
+        debugLogElement.scrollTop = debugLogElement.scrollHeight;
+    };
+
+    const originalConsoleError = console.error;
+    console.error = function(...args) {
+        originalConsoleError.apply(console, args);
+        const message = 'ERROR: ' + args.map(arg => {
+            if (typeof arg === 'object') {
+                return JSON.stringify(arg, null, 2);
+            } else {
+                return String(arg);
+            }
+        }).join(' ');
+        debugLogElement.textContent += message + '\n';
+        debugLogElement.scrollTop = debugLogElement.scrollHeight;
+    };
 
     gedcomFile.addEventListener('change', () => {
         const file = gedcomFile.files[0];
@@ -169,13 +214,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Inside a FAM record
                 if (tag === 'HUSB') {
                     families[currentRecord].husband = value;
-                    console.log('Processing FAM HUSB:', currentRecord, '->', value, 'Individual exists:', !!individuals[value]);
                 } else if (tag === 'WIFE') {
                     families[currentRecord].wife = value;
-                    console.log('Processing FAM WIFE:', currentRecord, '->', value, 'Individual exists:', !!individuals[value]);
                 } else if (tag === 'CHIL') {
                     families[currentRecord].children.push(value);
-                    console.log('Processing FAM CHIL:', currentRecord, '->', value, 'Individual exists:', !!individuals[value]);
                 }
             }
         });
@@ -198,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
             mostDescendants,
             diameter,
             longestPath,
-            // Add more statistics here
+            individuals: individuals
         };
     }
 
@@ -395,9 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function displayReport(report) {
-        console.log('displayReport: report received', report);
         const individuals = report.individuals; // Get individuals data from report
-        console.log('displayReport: individuals from report', individuals);
         let html = `
             <h3>Summary</h3>
             <p>Total Individuals Processed: ${report.totalIndividuals}</p>

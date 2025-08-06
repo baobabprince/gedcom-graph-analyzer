@@ -90,6 +90,26 @@ button:hover {
     transition: opacity 0.3s;
 }
 
+.debug-output {
+    margin-top: 30px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+#debugLog {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 300px;
+    overflow-y: auto;
+    background-color: #eee;
+    padding: 10px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 14px;
+}
+
 .tooltip .tooltiptext::after {
     content: "";
     position: absolute;
