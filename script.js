@@ -554,11 +554,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function calculateLongestPath(graph) {
+        console.log('calculateLongestPath: Starting. Graph nodes count:', graph.nodes.length);
         let maxPathLength = 0;
         const nodes = graph.nodes;
 
         // Function to perform DFS and find longest path from a starting node
         function dfsFindLongestPath(startNode, currentPathLength, visitedNodes, currentAdj) {
+            console.log('Longest Path DFS: Visiting node', startNode, 'Current path length:', currentPathLength);
             maxPathLength = Math.max(maxPathLength, currentPathLength);
 
             currentAdj.get(startNode).forEach(neighbor => {
@@ -572,11 +574,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         nodes.forEach(node => {
             // Find longest path in descent (parent to child)
+            console.log('Longest Path: Starting DFS for descent from', node);
             dfsFindLongestPath(node, 0, new Set([node]), graph.adj);
             // Find longest path in ascent (child to parent)
+            console.log('Longest Path: Starting DFS for ascent from', node);
             dfsFindLongestPath(node, 0, new Set([node]), graph.reverseAdj);
         });
-
+        console.log('calculateLongestPath: Finished. Max path length found:', maxPathLength);
         return maxPathLength;
     }
 
