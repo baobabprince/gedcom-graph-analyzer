@@ -151,10 +151,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Inside a FAM record
                 if (tag === 'HUSB') {
                     families[currentRecord].husband = value;
+                    console.log('Processing FAM HUSB:', currentRecord, '->', value, 'Individual exists:', !!individuals[value]);
                 } else if (tag === 'WIFE') {
                     families[currentRecord].wife = value;
+                    console.log('Processing FAM WIFE:', currentRecord, '->', value, 'Individual exists:', !!individuals[value]);
                 } else if (tag === 'CHIL') {
                     families[currentRecord].children.push(value);
+                    console.log('Processing FAM CHIL:', currentRecord, '->', value, 'Individual exists:', !!individuals[value]);
                 }
             }
         });
