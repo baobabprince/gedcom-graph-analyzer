@@ -2,36 +2,48 @@ document.addEventListener('DOMContentLoaded', () => {
     const gedcomFile = document.getElementById('gedcomFile');
     const loadSampleButton = document.getElementById('loadSampleButton');
     const resultsDiv = document.getElementById('results');
-    const debugLogElement = document.getElementById('debugLog'); // Keep this for now, will be empty
+    const progressBar = document.getElementById('progressBar');
+    const statusMessage = document.getElementById('statusMessage');
 
     gedcomFile.addEventListener('change', () => {
-        console.log('File input changed.');
         resultsDiv.innerHTML = ''; // Clear previous results
-        debugLogElement.textContent = ''; // Clear debug log
-        
+        progressBar.value = 0;
+        statusMessage.textContent = 'Starting upload...';
+
         const file = gedcomFile.files[0];
         if (!file) {
             resultsDiv.innerHTML = '<p style="color: red;">Please select a GEDCOM file.</p>';
-            console.log('No file selected.');
+            statusMessage.textContent = 'No file selected.';
             return;
         }
 
-        console.log('File selected:', file.name);
         const reader = new FileReader();
+
+        reader.onprogress = (event) => {
+            if (event.lengthComputable) {
+                const percent = (event.loaded / event.total) * 100;
+                progressBar.value = percent;
+                statusMessage.textContent = `Uploading: ${percent.toFixed(2)}%`;
+            }
+        };
+
         reader.onload = (e) => {
-            console.log('File loaded.');
+            statusMessage.textContent = 'File uploaded. Analyzing...';
+            progressBar.value = 100;
             const gedcomContent = e.target.result;
             try {
                 const report = analyzeGedcom(gedcomContent);
                 displayReport(report);
+                statusMessage.textContent = 'Analysis complete!';
             } catch (error) {
                 resultsDiv.innerHTML = `<p style="color: red;">Error processing GEDCOM file: ${error.message}</p>`;
+                statusMessage.textContent = `Error: ${error.message}`;
                 console.error("GEDCOM processing error:", error);
             }
         };
         reader.onerror = () => {
             resultsDiv.innerHTML = '<p style="color: red;">Error reading file.</p>';
-            console.error('Error reading file.');
+            statusMessage.textContent = 'Error reading file.';
         };
         reader.readAsText(file);
     });
@@ -251,14 +263,16 @@ document.addEventListener('DOMContentLoaded', () => {
 `;
 
     loadSampleButton.addEventListener('click', () => {
-        console.log('Load Sample Data button clicked.');
         resultsDiv.innerHTML = ''; // Clear previous results
-        debugLogElement.textContent = ''; // Clear debug log
+        progressBar.value = 0;
+        statusMessage.textContent = 'Loading sample data...';
         try {
             const report = analyzeGedcom(sampleGedcomData);
             displayReport(report);
+            statusMessage.textContent = 'Sample data analysis complete!';
         } catch (error) {
             resultsDiv.innerHTML = `<p style="color: red;">Error processing sample GEDCOM data: ${error.message}</p>`;
+            statusMessage.textContent = `Error: ${error.message}`;
             console.error("Sample GEDCOM processing error:", error);
         }
     });
@@ -269,13 +283,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const individuals = {};
         const families = {};
 
-        console.log('analyzeGedcom: individuals initialized', individuals);
-        console.log('analyzeGedcom: families initialized', families);
-
         const lines = gedcomContent.split(/\r?\n/);
 
         // First Pass: Identify all INDI and FAM records and initialize them
-        console.log('analyzeGedcom: Starting first pass (identifying records)');
         lines.forEach(line => {
             const trimmedLine = line.trim();
             if (!trimmedLine) return;
@@ -290,17 +300,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (level === 0) {
                 if (tag === 'INDI') {
                     individuals[xrefId] = { id: xrefId, name: 'Unknown', sex: 'U', families: { spouse: [], child: [] } };
-                    console.log('First Pass: Parsed INDI:', xrefId, individuals[xrefId]);
                 } else if (tag === 'FAM') {
                     families[xrefId] = { id: xrefId, husband: null, wife: null, children: [] };
-                    console.log('First Pass: Parsed FAM:', xrefId, families[xrefId]);
                 }
             }
         });
-        console.log('analyzeGedcom: First pass complete. Individuals:', individuals, 'Families:', families);
 
         // Second Pass: Populate details and relationships
-        console.log('analyzeGedcom: Starting second pass (populating details)');
         let currentRecord = null;
         let currentRecordType = null;
 
@@ -330,37 +336,32 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentRecordType = null;
                     currentRecord = null;
                 }
-            } else if (currentRecordType === 'INDI' && currentRecord) {
+            }
+            else if (currentRecordType === 'INDI' && currentRecord) {
                 if (tag === 'NAME') {
                     individuals[currentRecord].name = value;
                 } else if (tag === 'SEX') {
                     individuals[currentRecord].sex = value;
                 } else if (tag === 'FAMS') { // Family as Spouse
                     individuals[currentRecord].families.spouse.push(value);
-                    console.log('Second Pass: Processing FAMS for', currentRecord, '->', value, 'Individual exists:', !!individuals[value]);
                 } else if (tag === 'FAMC') { // Family as Child
                     individuals[currentRecord].families.child.push(value);
-                    console.log('Second Pass: Processing FAMC for', currentRecord, '->', value, 'Individual exists:', !!individuals[value]);
                 }
-            } else if (currentRecordType === 'FAM' && currentRecord) {
+            }
+            else if (currentRecordType === 'FAM' && currentRecord) {
                 // Inside a FAM record
                 if (tag === 'HUSB') {
                     families[currentRecord].husband = value;
-                    console.log('Second Pass: Processing FAM HUSB:', currentRecord, '->', value, 'Individual exists:', !!individuals[value]);
                 } else if (tag === 'WIFE') {
                     families[currentRecord].wife = value;
-                    console.log('Second Pass: Processing FAM WIFE:', currentRecord, '->', value, 'Individual exists:', !!individuals[value]);
                 } else if (tag === 'CHIL') {
                     families[currentRecord].children.push(value);
-                    console.log('Second Pass: Processing FAM CHIL:', currentRecord, '->', value, 'Individual exists:', !!individuals[value]);
                 }
             }
         });
-        console.log('analyzeGedcom: Second pass complete. Individuals:', individuals, 'Families:', families);
 
         // Build graph for analysis
         const graph = buildGraph(individuals, families);
-        console.log('analyzeGedcom: Graph built', graph);
 
         // Perform graph theory calculations
         const connectivity = calculateConnectivity(graph);
@@ -376,7 +377,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const diameter = calculateDiameter(graph);
         const longestPath = calculateLongestPath(graph);
 
-        console.log('analyzeGedcom: returning report');
         return {
             totalIndividuals: Object.keys(individuals).length,
             connectivity,
@@ -438,8 +438,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function calculateConnectivity(graph) {
-        console.log('calculateConnectivity: Graph nodes:', graph.nodes.length);
-        console.log('calculateConnectivity: Graph adjacency list:', graph.adj);
         const visited = new Set();
         let components = 0;
 
@@ -584,9 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function displayReport(report) {
-        console.log('displayReport: report received', report);
         const individuals = report.individuals; // Get individuals data from report
-        console.log('displayReport: individuals from report', individuals);
         let html = `
             <div class="report-section-content">
                 <h3>Summary</h3>
