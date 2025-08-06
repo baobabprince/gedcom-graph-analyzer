@@ -103,51 +103,58 @@ document.addEventListener('DOMContentLoaded', () => {
         const families = {};
         const relationships = []; // To build the graph
 
-        const lines = gedcomContent.split('\n');
-        let currentIndividual = null;
-        let currentFamily = null;
+        const lines = gedcomContent.split(/\r?\n/);
+        let currentRecord = null;
+        let currentRecordType = null;
 
         lines.forEach(line => {
             const trimmedLine = line.trim();
-            const parts = trimmedLine.match(/^(\d+)\s+(@[^@]+@)?\s*(\w+)\s*(.*)$/);
-            if (!parts) return;
+            if (!trimmedLine) return; // Skip empty lines
+
+            const parts = trimmedLine.match(/^(\d+)\s+(@[^@]+@)?\s*(\w+)(?:\s+(.*))?$/);
+            if (!parts) {
+                console.warn("Skipping malformed GEDCOM line:", trimmedLine);
+                return;
+            }
 
             const level = parseInt(parts[1]);
-            const xrefId = parts[2];
+            const xrefId = parts[2]; // Can be undefined
             const tag = parts[3];
-            const value = parts[4].trim();
+            const value = parts[4] ? parts[4].trim() : ''; // Can be undefined
 
             if (level === 0) {
+                // New top-level record
                 if (tag === 'INDI') {
-                    currentIndividual = xrefId;
+                    currentRecordType = 'INDI';
+                    currentRecord = xrefId;
                     individuals[xrefId] = { id: xrefId, name: 'Unknown', sex: 'U', families: { spouse: [], child: [] } };
                 } else if (tag === 'FAM') {
-                    currentFamily = xrefId;
+                    currentRecordType = 'FAM';
+                    currentRecord = xrefId;
                     families[xrefId] = { id: xrefId, husband: null, wife: null, children: [] };
                 } else {
-                    currentIndividual = null;
-                    currentFamily = null;
+                    currentRecordType = null;
+                    currentRecord = null;
                 }
-            } else if (currentIndividual) {
+            } else if (currentRecordType === 'INDI' && currentRecord) {
+                // Inside an INDI record
                 if (tag === 'NAME') {
-                    individuals[currentIndividual].name = value;
+                    individuals[currentRecord].name = value;
                 } else if (tag === 'SEX') {
-                    individuals[currentIndividual].sex = value;
+                    individuals[currentRecord].sex = value;
                 } else if (tag === 'FAMS') { // Family as Spouse
-                    individuals[currentIndividual].families.spouse.push(value);
+                    individuals[currentRecord].families.spouse.push(value);
                 } else if (tag === 'FAMC') { // Family as Child
-                    individuals[currentIndividual].families.child.push(value);
+                    individuals[currentRecord].families.child.push(value);
                 }
-            } else if (currentFamily) {
+            } else if (currentRecordType === 'FAM' && currentRecord) {
+                // Inside a FAM record
                 if (tag === 'HUSB') {
-                    families[currentFamily].husband = value;
-                    relationships.push({ from: value, to: currentFamily, type: 'HUSB' });
+                    families[currentRecord].husband = value;
                 } else if (tag === 'WIFE') {
-                    families[currentFamily].wife = value;
-                    relationships.push({ from: value, to: currentFamily, type: 'WIFE' });
+                    families[currentRecord].wife = value;
                 } else if (tag === 'CHIL') {
-                    families[currentFamily].children.push(value);
-                    relationships.push({ from: value, to: currentFamily, type: 'CHIL' });
+                    families[currentRecord].children.push(value);
                 }
             }
         });
@@ -177,45 +184,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function buildGraph(individuals, families) {
         const nodes = new Set();
-        const adj = new Map();
+        const adj = new Map(); // Adjacency list for directed graph
+        const reverseAdj = new Map(); // Adjacency list for reverse graph (for ancestors)
 
-        // Add all individuals as nodes
+        // Add all individuals as nodes and initialize their adjacency lists
         for (const id in individuals) {
             nodes.add(id);
-            adj.set(id, new Set()); // Initialize adjacency list for each individual
+            adj.set(id, new Set());
+            reverseAdj.set(id, new Set());
         }
 
-        // Add family relationships as edges between individuals
+        // Add family relationships as directed edges
         for (const famId in families) {
             const family = families[famId];
             const husbandId = family.husband;
             const wifeId = family.wife;
             const childrenIds = family.children;
 
-            // Link husband and wife
+            // Link husband and wife (bidirectional for general connectivity)
             if (husbandId && wifeId) {
                 if (nodes.has(husbandId) && nodes.has(wifeId)) {
                     adj.get(husbandId).add(wifeId);
                     adj.get(wifeId).add(husbandId);
+
+                    reverseAdj.get(husbandId).add(wifeId);
+                    reverseAdj.get(wifeId).add(husbandId);
                 }
             }
 
-            // Link parents to children
+            // Link parents to children (directed edges)
             childrenIds.forEach(childId => {
                 if (nodes.has(childId)) {
                     if (husbandId && nodes.has(husbandId)) {
-                        adj.get(childId).add(husbandId);
-                        adj.get(husbandId).add(childId);
+                        adj.get(husbandId).add(childId); // Parent -> Child
+                        reverseAdj.get(childId).add(husbandId); // Child -> Parent
                     }
                     if (wifeId && nodes.has(wifeId)) {
-                        adj.get(childId).add(wifeId);
-                        adj.get(wifeId).add(childId);
+                        adj.get(wifeId).add(childId); // Parent -> Child
+                        reverseAdj.get(childId).add(wifeId); // Child -> Parent
                     }
                 }
             });
         }
 
-        return { nodes: Array.from(nodes), adj: adj };
+        return { nodes: Array.from(nodes), adj: adj, reverseAdj: reverseAdj };
     }
 
     function calculateConnectivity(graph) {
@@ -259,35 +271,47 @@ document.addEventListener('DOMContentLoaded', () => {
         const ancestorCounts = {};
         const descendantCounts = {};
 
-        // Initialize counts
+        // Helper function for BFS traversal
+        function bfs(startNode, adjacencyList) {
+            const visited = new Set();
+            const queue = [startNode];
+            visited.add(startNode);
+            let count = 0;
+
+            while (queue.length > 0) {
+                const node = queue.shift();
+                if (individuals[node] && node !== startNode) { // Only count individuals, not families, and not the start node itself
+                    count++;
+                }
+
+                adjacencyList.get(node).forEach(neighbor => {
+                    if (!visited.has(neighbor)) {
+                        visited.add(neighbor);
+                        queue.push(neighbor);
+                    }
+                });
+            }
+            return count;
+        }
+
         graph.nodes.forEach(node => {
-            if (individuals[node]) { // Only count for individuals, not families
-                ancestorCounts[node] = 0;
-                descendantCounts[node] = 0;
+            if (individuals[node]) { // Only calculate for individuals
+                ancestorCounts[node] = bfs(node, graph.reverseAdj);
+                descendantCounts[node] = bfs(node, graph.adj);
             }
         });
 
-        // This is a simplified approach. A full ancestor/descendant calculation
-        // would require traversing the graph based on parent-child relationships,
-        // which are not explicitly represented as directed edges in the current
-        // undirected graph. For a more accurate calculation, the graph
-        // construction would need to differentiate parent-child edges.
+        // Sort and get top 5 for ancestors
+        const mostAncestors = Object.entries(ancestorCounts)
+            .sort(([, countA], [, countB]) => countB - countA)
+            .slice(0, 5)
+            .map(([id, score]) => ({ id, score }));
 
-        // For now, we'll use a proxy: individuals with many connections (high degree centrality)
-        // are likely to have many ancestors/descendants.
-        // This needs to be refined with a directed graph for accurate results.
-
-        // Placeholder: For a proper implementation, you'd need to build a directed graph
-        // where edges go from child to parent for ancestors, and parent to child for descendants.
-        // Then perform BFS/DFS from each individual.
-
-        // For demonstration, let's just return the top 5 individuals by degree centrality
-        // as a proxy for "most connected" which often correlates.
-        const sortedByDegree = Object.entries(calculateCentrality(graph))
-            .sort(([, scoreA], [, scoreB]) => scoreB - scoreA);
-
-        const mostAncestors = sortedByDegree.slice(0, 5).map(([id, score]) => ({ id, score }));
-        const mostDescendants = sortedByDegree.slice(0, 5).map(([id, score]) => ({ id, score }));
+        // Sort and get top 5 for descendants
+        const mostDescendants = Object.entries(descendantCounts)
+            .sort(([, countA], [, countB]) => countB - countA)
+            .slice(0, 5)
+            .map(([id, score]) => ({ id, score }));
 
         return { mostAncestors, mostDescendants };
     }
@@ -323,31 +347,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function calculateLongestPath(graph) {
-        // This is a complex problem for general graphs (NP-hard).
-        // For a family tree, it usually refers to the longest path without cycles.
-        // A simple approximation for demonstration: find the longest path using BFS/DFS
-        // from each node, keeping track of visited nodes in the current path.
-
-        let longestPathLength = 0;
+        let maxPathLength = 0;
         const nodes = graph.nodes;
 
-        function dfsLongestPath(startNode, currentPath, visitedInPath) {
-            longestPathLength = Math.max(longestPathLength, currentPath.length - 1); // -1 because path length is edges
+        // Function to perform DFS and find longest path from a starting node
+        function dfsFindLongestPath(startNode, currentPathLength, visitedNodes, currentAdj) {
+            maxPathLength = Math.max(maxPathLength, currentPathLength);
 
-            graph.adj.get(startNode).forEach(neighbor => {
-                if (!visitedInPath.has(neighbor)) {
-                    visitedInPath.add(neighbor);
-                    dfsLongestPath(neighbor, [...currentPath, neighbor], visitedInPath);
-                    visitedInPath.delete(neighbor); // Backtrack
+            currentAdj.get(startNode).forEach(neighbor => {
+                if (!visitedNodes.has(neighbor)) {
+                    visitedNodes.add(neighbor);
+                    dfsFindLongestPath(neighbor, currentPathLength + 1, visitedNodes, currentAdj);
+                    visitedNodes.delete(neighbor); // Backtrack
                 }
             });
         }
 
         nodes.forEach(node => {
-            dfsLongestPath(node, [node], new Set([node]));
+            // Find longest path in descent (parent to child)
+            dfsFindLongestPath(node, 0, new Set([node]), graph.adj);
+            // Find longest path in ascent (child to parent)
+            dfsFindLongestPath(node, 0, new Set([node]), graph.reverseAdj);
         });
 
-        return longestPathLength;
+        return maxPathLength;
     }
 
 
