@@ -423,7 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         if (report.mostAncestors.length > 0) {
             report.mostAncestors.forEach(item => {
-                html += `<li>Individual ID: ${item.id}</li>`;
+                html += `<li>${individuals[item.id] ? individuals[item.id].name : 'Unknown'} (ID: ${item.id})</li>`;
             });
         } else {
             html += `<li>No individuals with ancestors found.</li>`;
@@ -439,7 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         if (report.mostDescendants.length > 0) {
             report.mostDescendants.forEach(item => {
-                html += `<li>Individual ID: ${item.id}</li>`;
+                html += `<li>${individuals[item.id] ? individuals[item.id].name : 'Unknown'} (ID: ${item.id})</li>`;
             });
         } else {
             html += `<li>No individuals with descendants found.</li>`;
