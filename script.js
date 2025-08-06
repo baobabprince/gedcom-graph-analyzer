@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const diameter = calculateDiameter(graph);
         const longestPath = calculateLongestPath(graph);
 
-
+        console.log('analyzeGedcom: returning report with individuals', individuals);
         return {
             totalIndividuals: Object.keys(individuals).length,
             connectivity,
@@ -375,6 +375,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function displayReport(report) {
+        console.log('displayReport: report received', report);
+        const individuals = report.individuals; // Get individuals data from report
+        console.log('displayReport: individuals from report', individuals);
         let html = `
             <h3>Summary</h3>
             <p>Total Individuals Processed: ${report.totalIndividuals}</p>
@@ -407,7 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         if (report.centrality.length > 0) {
             report.centrality.forEach(([id, score]) => {
-                html += `<li>Individual ID: ${id} (Connections: ${score})</li>`;
+                html += `<li>${individuals[id] ? individuals[id].name : 'Unknown'} (ID: ${id}, Connections: ${score})</li>`;
             });
         } else {
             html += `<li>No central individuals found.</li>`;
