@@ -108,43 +108,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function buildGraph(individuals, families) {
         const nodes = new Set();
-        const edges = [];
+        const adj = new Map();
 
-        // Add individuals as nodes
+        // Add all individuals as nodes
         for (const id in individuals) {
             nodes.add(id);
+            adj.set(id, new Set()); // Initialize adjacency list for each individual
         }
 
-        // Add family relationships as edges
+        // Add family relationships as edges between individuals
         for (const famId in families) {
             const family = families[famId];
-            if (family.husband) {
-                nodes.add(family.husband);
-                edges.push([family.husband, famId]); // Link husband to family
+            const husbandId = family.husband;
+            const wifeId = family.wife;
+            const childrenIds = family.children;
+
+            // Link husband and wife
+            if (husbandId && wifeId) {
+                if (nodes.has(husbandId) && nodes.has(wifeId)) {
+                    adj.get(husbandId).add(wifeId);
+                    adj.get(wifeId).add(husbandId);
+                }
             }
-            if (family.wife) {
-                nodes.add(family.wife);
-                edges.push([family.wife, famId]); // Link wife to family
-            }
-            family.children.forEach(childId => {
-                nodes.add(childId);
-                edges.push([famId, childId]); // Link family to child
+
+            // Link parents to children
+            childrenIds.forEach(childId => {
+                if (nodes.has(childId)) {
+                    if (husbandId && nodes.has(husbandId)) {
+                        adj.get(childId).add(husbandId);
+                        adj.get(husbandId).add(childId);
+                    }
+                    if (wifeId && nodes.has(wifeId)) {
+                        adj.get(childId).add(wifeId);
+                        adj.get(wifeId).add(childId);
+                    }
+                }
             });
-
-            // Link spouses to each other (for centrality/connectivity)
-            if (family.husband && family.wife) {
-                edges.push([family.husband, family.wife]);
-                edges.push([family.wife, family.husband]); // Bidirectional for undirected graph
-            }
         }
-
-        // Create an adjacency list representation
-        const adj = new Map();
-        nodes.forEach(node => adj.set(node, new Set()));
-        edges.forEach(([u, v]) => {
-            adj.get(u).add(v);
-            adj.get(v).add(u); // Assuming an undirected graph for most stats
-        });
 
         return { nodes: Array.from(nodes), adj: adj };
     }
