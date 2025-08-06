@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     const gedcomFile = document.getElementById('gedcomFile');
-    const analyzeButton = document.getElementById('analyzeButton');
+    const loadSampleButton = document.getElementById('loadSampleButton');
     const resultsDiv = document.getElementById('results');
 
-    analyzeButton.addEventListener('click', () => {
+    gedcomFile.addEventListener('change', () => {
         const file = gedcomFile.files[0];
         if (!file) {
             resultsDiv.innerHTML = '<p style="color: red;">Please select a GEDCOM file.</p>';
