@@ -27,6 +27,75 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.readAsText(file);
     });
 
+    const sampleGedcomData = `0 HEAD
+1 CHAR UTF-8
+1 GEDC
+2 VERS 5.5.1
+2 FORM LINEAGE-LINKED
+1 SUBM @SUBM@
+0 @SUBM@ SUBM
+1 NAME Gemini CLI
+0 @I1@ INDI
+1 NAME Elizabeth II /Windsor/
+1 SEX F
+1 BIRT
+2 DATE 21 APR 1926
+1 FAMS @F1@
+0 @I2@ INDI
+1 NAME Philip /Mountbatten/
+1 SEX M
+1 BIRT
+2 DATE 10 JUN 1921
+1 DEAT
+2 DATE 09 APR 2021
+1 FAMS @F1@
+0 @I3@ INDI
+1 NAME Charles /Windsor/
+1 SEX M
+1 BIRT
+2 DATE 14 NOV 1948
+1 FAMC @F1@
+1 FAMS @F2@
+0 @I4@ INDI
+1 NAME Diana /Spencer/
+1 SEX F
+1 BIRT
+2 DATE 01 JUL 1961
+1 DEAT
+2 DATE 31 AUG 1997
+1 FAMS @F2@
+0 @I5@ INDI
+1 NAME William /Windsor/
+1 SEX M
+1 BIRT
+2 DATE 21 JUN 1982
+1 FAMC @F2@
+0 @I6@ INDI
+1 NAME Harry /Windsor/
+1 SEX M
+1 BIRT
+2 DATE 15 SEP 1984
+1 FAMC @F2@
+0 @F1@ FAM
+1 HUSB @I2@
+1 WIFE @I1@
+1 CHIL @I3@
+0 @F2@ FAM
+1 HUSB @I3@
+1 WIFE @I4@
+1 CHIL @I5@
+1 CHIL @I6@`;
+
+    loadSampleButton.addEventListener('click', () => {
+        try {
+            const report = analyzeGedcom(sampleGedcomData);
+            displayReport(report);
+        } catch (error) {
+            resultsDiv.innerHTML = `<p style="color: red;">Error processing sample GEDCOM data: ${error.message}</p>`;
+            console.error("Sample GEDCOM processing error:", error);
+        }
+    });
+
     function analyzeGedcom(gedcomContent) {
         // Basic GEDCOM parsing (simplified for demonstration)
         // In a real application, you'd use a robust GEDCOM parser library.
