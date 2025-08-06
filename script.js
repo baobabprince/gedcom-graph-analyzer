@@ -659,35 +659,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             html += `</ul>`;
 
-            html += `
-                <h3>Individual Ancestor/Descendant Counts</h3>
-                <div class="individual-counts-grid">
-            `;
-
-            // Sort individuals by name for pleasing output
-            const sortedIndividuals = Object.values(individuals).sort((a, b) => {
-                const nameA = a.name.toUpperCase();
-                const nameB = b.name.toUpperCase();
-                if (nameA < nameB) return -1;
-                if (nameA > nameB) return 1;
-                return 0;
-            });
-
-            sortedIndividuals.forEach(person => {
-                html += `
-                    <div class="individual-card">
-                        <strong>${person.name}</strong> (ID: ${person.id})<br>
-                        Ancestors: ${person.ancestorCount}<br>
-                        Descendants: ${person.descendantCount}
-                    </div>
-                `;
-            });
-
-            html += `
-                </div>
-            </div>
-        `;
-
-        resultsDiv.innerHTML = html;
+            resultsDiv.innerHTML = html;
     }
 });
