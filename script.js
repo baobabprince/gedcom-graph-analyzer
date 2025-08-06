@@ -125,56 +125,211 @@ document.addEventListener('DOMContentLoaded', () => {
 1 SUBM @SUBM@
 0 @SUBM@ SUBM
 1 NAME Gemini CLI
+
 0 @I1@ INDI
+1 NAME George V /Windsor/
+1 SEX M
+1 BIRT
+2 DATE 03 JUN 1865
+1 DEAT
+2 DATE 20 JAN 1936
+1 FAMS @F1@
+
+0 @I2@ INDI
+1 NAME Mary /Teck/
+1 SEX F
+1 BIRT
+2 DATE 26 MAY 1867
+1 DEAT
+2 DATE 24 MAR 1953
+1 FAMS @F1@
+
+0 @I3@ INDI
+1 NAME Edward VIII /Windsor/
+1 SEX M
+1 BIRT
+2 DATE 23 JUN 1894
+1 DEAT
+2 DATE 28 MAY 1972
+1 FAMC @F1@
+
+0 @I4@ INDI
+1 NAME George VI /Windsor/
+1 SEX M
+1 BIRT
+2 DATE 14 DEC 1895
+1 DEAT
+2 DATE 06 FEB 1952
+1 FAMC @F1@
+1 FAMS @F2@
+
+0 @I5@ INDI
+1 NAME Elizabeth /Bowes-Lyon/
+1 SEX F
+1 BIRT
+2 DATE 04 AUG 1900
+1 DEAT
+2 DATE 30 MAR 2002
+1 FAMS @F2@
+
+0 @I6@ INDI
 1 NAME Elizabeth II /Windsor/
 1 SEX F
 1 BIRT
 2 DATE 21 APR 1926
-1 FAMS @F1@
-0 @I2@ INDI
+1 FAMS @F3@
+1 FAMC @F2@
+
+0 @I7@ INDI
 1 NAME Philip /Mountbatten/
 1 SEX M
 1 BIRT
 2 DATE 10 JUN 1921
 1 DEAT
 2 DATE 09 APR 2021
-1 FAMS @F1@
-0 @I3@ INDI
+1 FAMS @F3@
+
+0 @I8@ INDI
 1 NAME Charles /Windsor/
 1 SEX M
 1 BIRT
 2 DATE 14 NOV 1948
-1 FAMC @F1@
-1 FAMS @F2@
-0 @I4@ INDI
+1 FAMC @F3@
+1 FAMS @F4@
+
+0 @I9@ INDI
 1 NAME Diana /Spencer/
 1 SEX F
 1 BIRT
 2 DATE 01 JUL 1961
 1 DEAT
 2 DATE 31 AUG 1997
-1 FAMS @F2@
-0 @I5@ INDI
+1 FAMS @F4@
+
+0 @I10@ INDI
 1 NAME William /Windsor/
 1 SEX M
 1 BIRT
 2 DATE 21 JUN 1982
-1 FAMC @F2@
-0 @I6@ INDI
+1 FAMC @F4@
+1 FAMS @F5@
+
+0 @I11@ INDI
+1 NAME Catherine /Middleton/
+1 SEX F
+1 BIRT
+2 DATE 09 JAN 1982
+1 FAMS @F5@
+
+0 @I12@ INDI
+1 NAME George /Windsor/
+1 SEX M
+1 BIRT
+2 DATE 22 JUL 2013
+1 FAMC @F5@
+
+0 @I13@ INDI
+1 NAME Charlotte /Windsor/
+1 SEX F
+1 BIRT
+2 DATE 02 MAY 2015
+1 FAMC @F5@
+
+0 @I14@ INDI
+1 NAME Louis /Windsor/
+1 SEX M
+1 BIRT
+2 DATE 23 APR 2018
+1 FAMC @F5@
+
+0 @I15@ INDI
 1 NAME Harry /Windsor/
 1 SEX M
 1 BIRT
 2 DATE 15 SEP 1984
-1 FAMC @F2@
+1 FAMC @F4@
+1 FAMS @F6@
+
+0 @I16@ INDI
+1 NAME Meghan /Markle/
+1 SEX F
+1 BIRT
+2 DATE 04 AUG 1981
+1 FAMS @F6@
+
+0 @I17@ INDI
+1 NAME Archie /Mountbatten-Windsor/
+1 SEX M
+1 BIRT
+2 DATE 06 MAY 2019
+1 FAMC @F6@
+
+0 @I18@ INDI
+1 NAME Lilibet /Mountbatten-Windsor/
+1 SEX F
+1 BIRT
+2 DATE 04 JUN 2021
+1 FAMC @F6@
+
+0 @I19@ INDI
+1 NAME Anne /Windsor/
+1 SEX F
+1 BIRT
+2 DATE 15 AUG 1950
+1 FAMC @F3@
+
+0 @I20@ INDI
+1 NAME Andrew /Windsor/
+1 SEX M
+1 BIRT
+2 DATE 19 FEB 1960
+1 FAMC @F3@
+
+0 @I21@ INDI
+1 NAME Edward /Windsor/
+1 SEX M
+1 BIRT
+2 DATE 10 MAR 1964
+1 FAMC @F3@
+
 0 @F1@ FAM
-1 HUSB @I2@
-1 WIFE @I1@
+1 HUSB @I1@
+1 WIFE @I2@
 1 CHIL @I3@
+1 CHIL @I4@
+
 0 @F2@ FAM
-1 HUSB @I3@
-1 WIFE @I4@
-1 CHIL @I5@
-1 CHIL @I6@`;
+1 HUSB @I4@
+1 WIFE @I5@
+1 CHIL @I6@
+
+0 @F3@ FAM
+1 HUSB @I7@
+1 WIFE @I6@
+1 CHIL @I8@
+1 CHIL @I19@
+1 CHIL @I20@
+1 CHIL @I21@
+
+0 @F4@ FAM
+1 HUSB @I8@
+1 WIFE @I9@
+1 CHIL @I10@
+1 CHIL @I15@
+
+0 @F5@ FAM
+1 HUSB @I10@
+1 WIFE @I11@
+1 CHIL @I12@
+1 CHIL @I13@
+1 CHIL @I14@
+
+0 @F6@ FAM
+1 HUSB @I15@
+1 WIFE @I16@
+1 CHIL @I17@
+1 CHIL @I18@
+`;
 
     loadSampleButton.addEventListener('click', () => {
         try {
