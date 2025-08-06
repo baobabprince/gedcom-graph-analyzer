@@ -110,6 +110,47 @@ button:hover {
     font-size: 14px;
 }
 
+.report-section-content {
+    padding: 20px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    background-color: #fdfdfd;
+}
+
+.report-section-content h3, .report-section-content h4 {
+    color: #007bff;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+.report-section-content ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.report-section-content ul li {
+    margin-bottom: 8px;
+    padding-left: 10px;
+    border-left: 3px solid #007bff;
+}
+
+.individual-counts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.individual-card {
+    background-color: #e9f5ff;
+    border: 1px solid #b3d9ff;
+    border-radius: 5px;
+    padding: 15px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
 .tooltip .tooltiptext::after {
     content: "";
     position: absolute;

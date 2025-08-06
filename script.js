@@ -338,6 +338,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function calculateConnectivity(graph) {
+        console.log('calculateConnectivity: Graph nodes:', graph.nodes.length);
+        console.log('calculateConnectivity: Graph adjacency list:', graph.adj);
         const visited = new Set();
         let components = 0;
 
@@ -484,76 +486,105 @@ document.addEventListener('DOMContentLoaded', () => {
     function displayReport(report) {
         const individuals = report.individuals; // Get individuals data from report
         let html = `
-            <h3>Summary</h3>
-            <p>Total Individuals Processed: ${report.totalIndividuals}</p>
+            <div class="report-section-content">
+                <h3>Summary</h3>
+                <p><strong>Total Individuals Processed:</strong> ${report.totalIndividuals}</p>
 
-            <h3>Graph Theory Statistics</h3>
-            <p>
-                Connectivity (Number of separate family trees):
-                <span class="tooltip">${report.connectivity}
-                    <span class="tooltiptext">The number of disconnected components in the family tree graph. Each component represents a separate family tree.</span>
-                </span>
-            </p>
-            <p>
-                Diameter (Longest shortest path):
-                <span class="tooltip">${report.diameter}
-                    <span class="tooltiptext">The greatest distance (number of relationships) between any two individuals in the largest connected component of the family tree.</span>
-                </span>
-            </p>
-            <p>
-                Longest Path (Approximation):
-                <span class="tooltip">${report.longestPath}
-                    <span class="tooltiptext">The maximum number of unique relationships in a single, non-repeating chain of individuals within the family tree. This is an approximation for general graphs.</span>
-                </span>
-            </p>
+                <h3>Graph Theory Statistics</h3>
+                <p>
+                    <strong>Connectivity (Number of separate family trees):</strong>
+                    <span class="tooltip">${report.connectivity}
+                        <span class="tooltiptext">The number of disconnected components in the family tree graph. Each component represents a separate family tree.</span>
+                    </span>
+                </p>
+                <p>
+                    <strong>Diameter (Longest shortest path):</strong>
+                    <span class="tooltip">${report.diameter}
+                        <span class="tooltiptext">The greatest distance (number of relationships) between any two individuals in the largest connected component of the family tree.</span>
+                    </span>
+                </p>
+                <p>
+                    <strong>Longest Path (Approximation):</strong>
+                    <span class="tooltip">${report.longestPath}
+                        <span class="tooltiptext">The maximum number of unique relationships in a single, non-repeating chain of individuals within the family tree. This is an approximation for general graphs.</span>
+                    </span>
+                </p>
 
-            <h4>Top 5 Most Central Individuals (by Degree Centrality)</h4>
-            <p class="tooltip">Degree Centrality:
-                <span class="tooltiptext">Measures the number of direct connections an individual has. Higher degree centrality means more direct relationships.</span>
-            </p>
-            <ul>
-        `;
-        if (report.centrality.length > 0) {
-            report.centrality.forEach(([id, score]) => {
-                html += `<li>${individuals[id] ? individuals[id].name : 'Unknown'} (ID: ${id}, Connections: ${score})</li>`;
+                <h4>Top 5 Most Central Individuals (by Degree Centrality)</h4>
+                <p class="tooltip">Degree Centrality:
+                    <span class="tooltiptext">Measures the number of direct connections an individual has. Higher degree centrality means more direct relationships.</span>
+                </p>
+                <ul>
+            `;
+            if (report.centrality.length > 0) {
+                report.centrality.forEach(([id, score]) => {
+                    html += `<li><strong>${individuals[id] ? individuals[id].name : 'Unknown'}</strong> (ID: ${id}, Connections: ${score})</li>`;
+                });
+            } else {
+                html += `<li>No central individuals found.</li>`;
+            }
+            html += `</ul>`;
+
+            html += `
+                <h4>Top 5 Individuals with Most Ancestors</h4>
+                <p class="tooltip">Most Ancestors:
+                    <span class="tooltiptext">Individuals who are connected to the largest number of preceding generations within the family tree.</span>
+                </p>
+                <ul>
+            `;
+            if (report.mostAncestors.length > 0) {
+                report.mostAncestors.forEach(item => {
+                    html += `<li><strong>${individuals[item.id] ? individuals[item.id].name : 'Unknown'}</strong> (ID: ${item.id}, Ancestors: ${item.score})</li>`;
+                });
+            } else {
+                html += `<li>No individuals with ancestors found.</li>`;
+            }
+            html += `</ul>`;
+
+            html += `
+                <h4>Top 5 Individuals with Most Descendants</h4>
+                <p class="tooltip">Most Descendants:
+                    <span class="tooltiptext">Individuals who are connected to the largest number of succeeding generations within the family tree.</span>
+                </p>
+                <ul>
+            `;
+            if (report.mostDescendants.length > 0) {
+                report.mostDescendants.forEach(item => {
+                    html += `<li><strong>${individuals[item.id] ? individuals[item.id].name : 'Unknown'}</strong> (ID: ${item.id}, Descendants: ${item.score})</li>`;
+                });
+            } else {
+                html += `<li>No individuals with descendants found.</li>`;
+            }
+            html += `</ul>`;
+
+            html += `
+                <h3>Individual Ancestor/Descendant Counts</h3>
+                <div class="individual-counts-grid">
+            `;
+
+            // Sort individuals by name for pleasing output
+            const sortedIndividuals = Object.values(individuals).sort((a, b) => {
+                const nameA = a.name.toUpperCase();
+                const nameB = b.name.toUpperCase();
+                if (nameA < nameB) return -1;
+                if (nameA > nameB) return 1;
+                return 0;
             });
-        } else {
-            html += `<li>No central individuals found.</li>`;
-        }
-        html += `</ul>`;
 
-        html += `
-            <h4>Top 5 Individuals with Most Ancestors (Approximation)</h4>
-            <p class="tooltip">Most Ancestors:
-                <span class="tooltiptext">Individuals who are connected to the largest number of preceding generations within the family tree. (Approximation based on connectivity for this demo).</span>
-            </p>
-            <ul>
-        `;
-        if (report.mostAncestors.length > 0) {
-            report.mostAncestors.forEach(item => {
-                html += `<li>${individuals[item.id] ? individuals[item.id].name : 'Unknown'} (ID: ${item.id})</li>`;
+            sortedIndividuals.forEach(person => {
+                html += `
+                    <div class="individual-card">
+                        <strong>${person.name}</strong> (ID: ${person.id})<br>
+                        Ancestors: ${person.ancestorCount}<br>
+                        Descendants: ${person.descendantCount}
+                    </div>
+                `;
             });
-        } else {
-            html += `<li>No individuals with ancestors found.</li>`;
-        }
-        html += `</ul>`;
 
-        html += `
-            <h4>Top 5 Individuals with Most Descendants (Approximation)</h4>
-            <p class="tooltip">Most Descendants:
-                <span class="tooltiptext">Individuals who are connected to the largest number of succeeding generations within the family tree. (Approximation based on connectivity for this demo).</span>
-            </p>
-            <ul>
+            html += `
+                </div>
+            </div>
         `;
-        if (report.mostDescendants.length > 0) {
-            report.mostDescendants.forEach(item => {
-                html += `<li>${individuals[item.id] ? individuals[item.id].name : 'Unknown'} (ID: ${item.id})</li>`;
-            });
-        } else {
-            html += `<li>No individuals with descendants found.</li>`;
-        }
-        html += `</ul>`;
-
 
         resultsDiv.innerHTML = html;
     }
