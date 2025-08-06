@@ -339,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             else if (currentRecordType === 'INDI' && currentRecord) {
                 if (tag === 'NAME') {
-                    individuals[currentRecord].name = value;
+                    individuals[currentRecord].name = value.replace(/\//g, '');
                 } else if (tag === 'SEX') {
                     individuals[currentRecord].sex = value;
                 } else if (tag === 'FAMS') { // Family as Spouse
