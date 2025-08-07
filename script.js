@@ -61,66 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const debugLogElement = document.getElementById('debugLog');
-
-    // Clear debug log on page load
-    if (debugLogElement) {
-        debugLogElement.textContent = '';
-    }
-
-    // Redirect console.log to the debug output element
-    const originalConsoleLog = console.log;
-    console.log = function(...args) {
-        originalConsoleLog.apply(console, args);
-        const message = args.map(arg => {
-            if (typeof arg === 'object') {
-                return JSON.stringify(arg, null, 2);
-            } else {
-                return String(arg);
-            }
-        }).join(' ');
-        if (debugLogElement) {
-            debugLogElement.textContent += message + '\n';
-            debugLogElement.scrollTop = debugLogElement.scrollHeight; // Auto-scroll to bottom
-        }
-    };
-
-    // Redirect console.warn and console.error as well
-    const originalConsoleWarn = console.warn;
-    console.warn = function(...args) {
-        originalConsoleWarn.apply(console, args);
-        const message = 'WARN: ' + args.map(arg => {
-            if (typeof arg === 'object') {
-                return JSON.stringify(arg, null, 2);
-            } else {
-                return String(arg);
-            }
-        }).join(' ');
-        if (debugLogElement) {
-            debugLogElement.textContent += message + '\n';
-            debugLogElement.scrollTop = debugLogElement.scrollHeight;
-        }
-    };
-
-    const originalConsoleError = console.error;
-    console.error = function(...args) {
-        originalConsoleError.apply(console, args);
-        const message = 'ERROR: ' + args.map(arg => {
-            if (typeof arg === 'object') {
-                return JSON.stringify(arg, null, 2);
-            } else {
-                return String(arg);
-            }
-        }).join(' ');
-        if (debugLogElement) {
-            debugLogElement.textContent += message + '\n';
-            debugLogElement.scrollTop = debugLogElement.scrollHeight;
-        }
-    };
-
-
-
     gedcomFile.addEventListener('change', () => {
+        console.log('File input changed. Starting analysis process.');
         resultsDiv.innerHTML = ''; // Clear previous results
         progressBar.value = 0;
         statusMessage.textContent = 'Starting upload...';
@@ -132,6 +74,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        console.log(`File selected: ${file.name}, size: ${file.size} bytes`);
+
         const reader = new FileReader();
 
         reader.onprogress = (event) => {
@@ -139,10 +83,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const percent = (event.loaded / event.total) * 100;
                 progressBar.value = percent;
                 statusMessage.textContent = `Uploading: ${percent.toFixed(2)}%`;
+                console.log(`File reading progress: ${percent.toFixed(2)}%`);
             }
         };
 
         reader.onload = (e) => {
+            console.log('File reading complete. Starting analysis...');
             statusMessage.textContent = 'File uploaded. Analyzing...';
             progressBar.value = 100;
             const gedcomContent = e.target.result;
@@ -157,9 +103,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
         reader.onerror = () => {
+            console.error('Error reading file.');
             resultsDiv.innerHTML = '<p style="color: red;">Error reading file.</p>';
             statusMessage.textContent = 'Error reading file.';
         };
+
+        console.log('Starting to read the file.');
         reader.readAsText(file);
     });
 
@@ -224,10 +173,12 @@ document.addEventListener('DOMContentLoaded', () => {
 `;
 
     loadSampleButton.addEventListener('click', () => {
+        console.log('Load Sample Data button clicked.');
         resultsDiv.innerHTML = ''; // Clear previous results
         progressBar.value = 0;
         statusMessage.textContent = 'Loading sample data...';
         try {
+            console.log('Analyzing sample GEDCOM data.');
             const report = analyzeGedcom(sampleGedcomData);
             displayReport(report);
             statusMessage.textContent = 'Sample data analysis complete!';
@@ -239,14 +190,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function analyzeGedcom(gedcomContent) {
-        // Basic GEDCOM parsing (simplified for demonstration)
-        // In a real application, you'd use a robust GEDCOM parser library.
+        console.log('analyzeGedcom: Starting GEDCOM analysis.');
         const individuals = {};
         const families = {};
 
         const lines = gedcomContent.split(/\r?\n/);
+        console.log(`analyzeGedcom: Processing ${lines.length} lines of data.`);
 
         // First Pass: Identify all INDI and FAM records and initialize them
+        console.log('analyzeGedcom: First pass - identifying INDI and FAM records.');
         lines.forEach(line => {
             const trimmedLine = line.trim();
             if (!trimmedLine) return;
@@ -266,8 +218,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
+        console.log(`analyzeGedcom: First pass complete. Found ${Object.keys(individuals).length} individuals and ${Object.keys(families).length} families.`);
 
         // Second Pass: Populate details and relationships
+        console.log('analyzeGedcom: Second pass - populating details and relationships.');
         let currentRecord = null;
         let currentRecordType = null;
 
@@ -320,11 +274,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
+        console.log('analyzeGedcom: Second pass complete.');
 
         // Build graph for analysis
         const graph = buildGraph(individuals, families);
 
         // Perform graph theory calculations
+        console.log('analyzeGedcom: Calculating graph metrics.');
         const connectivity = calculateConnectivity(graph);
         const centrality = calculateCentrality(graph);
         const { mostAncestors, mostDescendants, allAncestorCounts, allDescendantCounts } = calculateAncestorsDescendants(graph, individuals);
@@ -337,7 +293,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const diameter = calculateDiameter(graph);
         const longestPath = calculateLongestPath(graph);
+        const averageDistance = calculateAverageDistance(graph);
 
+        console.log('analyzeGedcom: Analysis finished.');
         return {
             totalIndividuals: Object.keys(individuals).length,
             connectivity,
@@ -346,11 +304,13 @@ document.addEventListener('DOMContentLoaded', () => {
             mostDescendants,
             diameter,
             longestPath,
+            averageDistance,
             individuals: individuals
         };
     }
 
     function buildGraph(individuals, families) {
+        console.log('buildGraph: Building graph from individuals and families.');
         const nodes = new Set();
         const adj = new Map(); // Adjacency list for directed graph
         const reverseAdj = new Map(); // Adjacency list for reverse graph (for ancestors)
@@ -395,10 +355,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        console.log(`buildGraph: Graph built with ${nodes.size} nodes.`);
         return { nodes: Array.from(nodes), adj: adj, reverseAdj: reverseAdj };
     }
 
     function calculateConnectivity(graph) {
+        console.log('calculateConnectivity: Starting.');
         const visited = new Set();
         let components = 0;
 
@@ -417,10 +379,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 components++;
             }
         });
+        console.log(`calculateConnectivity: Found ${components} connected components.`);
         return components;
     }
 
     function calculateCentrality(graph) {
+        console.log('calculateCentrality: Calculating degree centrality.');
         // Simple degree centrality: number of direct connections
         const centralityScores = {};
         graph.nodes.forEach(node => {
@@ -432,10 +396,12 @@ document.addEventListener('DOMContentLoaded', () => {
             .sort(([, scoreA], [, scoreB]) => scoreB - scoreA)
             .slice(0, 5); // Top 5
 
+        console.log('calculateCentrality: Finished.');
         return sortedCentrality;
     }
 
     function calculateAncestorsDescendants(graph, individuals) {
+        console.log('calculateAncestorsDescendants: Starting ancestor/descendant count.');
         const ancestorCounts = {};
         const descendantCounts = {};
 
@@ -481,10 +447,12 @@ document.addEventListener('DOMContentLoaded', () => {
             .slice(0, 5)
             .map(([id, score]) => ({ id, score }));
 
+        console.log('calculateAncestorsDescendants: Finished.');
         return { mostAncestors, mostDescendants, allAncestorCounts: ancestorCounts, allDescendantCounts: descendantCounts };
     }
 
     function calculateDiameter(graph) {
+        console.log('calculateDiameter: Starting diameter calculation.');
         let maxDistance = 0;
         const nodes = graph.nodes;
 
@@ -511,6 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         }
+        console.log(`calculateDiameter: Finished. Diameter is ${maxDistance}.`);
         return maxDistance;
     }
 
@@ -587,6 +556,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function displayReport(report) {
+        console.log('displayReport: Generating and displaying the report.');
         const individuals = report.individuals; // Get individuals data from report
         let html = `
             <div class="report-section-content">
@@ -614,7 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </p>
                 <p>
                     <strong>Average Distance:</strong>
-                    <span class="tooltip">${report.averageDistance.toFixed(2)}
+                    <span class="tooltip">${report.averageDistance ? report.averageDistance.toFixed(2) : 'N/A'}
                         <span class="tooltiptext">The average shortest path length between all pairs of reachable individuals in the family tree.</span>
                     </span>
                 </p>
@@ -672,4 +642,5 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         resultsDiv.innerHTML = html;
+        console.log('displayReport: Report displayed successfully.');
     }
