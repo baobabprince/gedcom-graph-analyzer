@@ -61,69 +61,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const debugLogElement = document.getElementById('debugLog');
-
-    // Clear debug log on page load
-    if (debugLogElement) {
-        debugLogElement.textContent = '';
-    }
-
-    // Redirect console.log to the debug output element
-    const originalConsoleLog = console.log;
-    console.log = function(...args) {
-        originalConsoleLog.apply(console, args);
-        const message = args.map(arg => {
-            if (typeof arg === 'object') {
-                return JSON.stringify(arg, null, 2);
-            } else {
-                return String(arg);
-            }
-        }).join(' ');
-        if (debugLogElement) {
-            debugLogElement.textContent += message + '\n';
-            debugLogElement.scrollTop = debugLogElement.scrollHeight; // Auto-scroll to bottom
-        }
-    };
-
-    // Redirect console.warn and console.error as well
-    const originalConsoleWarn = console.warn;
-    console.warn = function(...args) {
-        originalConsoleWarn.apply(console, args);
-        const message = 'WARN: ' + args.map(arg => {
-            if (typeof arg === 'object') {
-                return JSON.stringify(arg, null, 2);
-            } else {
-                return String(arg);
-            }
-        }).join(' ');
-        if (debugLogElement) {
-            debugLogElement.textContent += message + '\n';
-            debugLogElement.scrollTop = debugLogElement.scrollHeight;
-        }
-    };
-
-    const originalConsoleError = console.error;
-    console.error = function(...args) {
-        originalConsoleError.apply(console, args);
-        const message = 'ERROR: ' + args.map(arg => {
-            if (typeof arg === 'object') {
-                return JSON.stringify(arg, null, 2);
-            } else {
-                return String(arg);
-            }
-        }).join(' ');
-        if (debugLogElement) {
-            debugLogElement.textContent += message + '\n';
-            debugLogElement.scrollTop = debugLogElement.scrollHeight;
-        }
-    };
-
-
-
     gedcomFile.addEventListener('change', () => {
         resultsDiv.innerHTML = ''; // Clear previous results
         progressBar.value = 0;
-        statusMessage.textContent = 'Starting upload...';
+        statusMessage.textContent = 'Starting analysis...';
 
         const file = gedcomFile.files[0];
         if (!file) {
@@ -138,12 +79,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (event.lengthComputable) {
                 const percent = (event.loaded / event.total) * 100;
                 progressBar.value = percent;
-                statusMessage.textContent = `Uploading: ${percent.toFixed(2)}%`;
+                statusMessage.textContent = `Processing: ${percent.toFixed(2)}%`;
             }
         };
 
         reader.onload = (e) => {
-            statusMessage.textContent = 'File uploaded. Analyzing...';
+            statusMessage.textContent = 'File processed. Analyzing...';
             progressBar.value = 100;
             const gedcomContent = e.target.result;
             try {
@@ -336,7 +277,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const diameter = calculateDiameter(graph);
-        const longestPath = calculateLongestPath(graph);
+        const averageDistance = calculateAverageDistance(graph);
+        const maxGenerationalDepth = calculateMaxGenerationalDepth(individuals, families);
+
+        // New statistics
+        const totalFamilies = Object.keys(families).length;
+
+        const genderCounts = { M: 0, F: 0, U: 0 };
+        for (const id in individuals) {
+            const sex = individuals[id].sex || 'U';
+            if (genderCounts[sex] !== undefined) {
+                genderCounts[sex]++;
+            } else {
+                genderCounts['U']++;
+            }
+        }
+
+        let totalChildren = 0;
+        for (const famId in families) {
+            totalChildren += families[famId].children.length;
+        }
+        const avgChildrenPerFamily = totalFamilies > 0 ? totalChildren / totalFamilies : 0;
+
+        let rootIndividualsCount = 0;
+        for (const id in individuals) {
+            if (!individuals[id].families.child || individuals[id].families.child.length === 0) {
+                rootIndividualsCount++;
+            }
+        }
+
+        let leafIndividualsCount = 0;
+        const descendantCounts = allDescendantCounts; // from calculateAncestorsDescendants
+        for (const id in individuals) {
+            if (descendantCounts[id] === 0) {
+                leafIndividualsCount++;
+            }
+        }
 
         return {
             totalIndividuals: Object.keys(individuals).length,
@@ -345,8 +321,16 @@ document.addEventListener('DOMContentLoaded', () => {
             mostAncestors,
             mostDescendants,
             diameter,
-            longestPath,
-            individuals: individuals
+            averageDistance,
+            individuals,
+            families,
+            // New stats
+            totalFamilies,
+            genderCounts,
+            avgChildrenPerFamily,
+            rootIndividualsCount,
+            leafIndividualsCount,
+            maxGenerationalDepth
         };
     }
 
@@ -514,35 +498,54 @@ document.addEventListener('DOMContentLoaded', () => {
         return maxDistance;
     }
 
-    function calculateLongestPath(graph) {
-        console.log('calculateLongestPath: Starting. Graph nodes count:', graph.nodes.length);
-        let maxPathLength = 0;
-        const nodes = graph.nodes;
+    function calculateMaxGenerationalDepth(individuals, families) {
+        const parentToChildAdj = new Map();
+        const nodes = Object.keys(individuals);
+        nodes.forEach(id => parentToChildAdj.set(id, []));
 
-        // Function to perform DFS and find longest path from a starting node
-        function dfsFindLongestPath(startNode, currentPathLength, visitedNodes, currentAdj) {
-            console.log('Longest Path DFS: Visiting node', startNode, 'Current path length:', currentPathLength);
-            maxPathLength = Math.max(maxPathLength, currentPathLength);
+        for (const famId in families) {
+            const family = families[famId];
+            const parents = [];
+            if (family.husband && individuals[family.husband]) parents.push(family.husband);
+            if (family.wife && individuals[family.wife]) parents.push(family.wife);
 
-            currentAdj.get(startNode).forEach(neighbor => {
-                if (!visitedNodes.has(neighbor)) {
-                    visitedNodes.add(neighbor);
-                    dfsFindLongestPath(neighbor, currentPathLength + 1, visitedNodes, currentAdj);
-                    visitedNodes.delete(neighbor); // Backtrack
+            for (const childId of family.children) {
+                if (!individuals[childId]) continue;
+                for (const parentId of parents) {
+                    parentToChildAdj.get(parentId).push(childId);
                 }
-            });
+            }
         }
 
-        nodes.forEach(node => {
-            // Find longest path in descent (parent to child)
-            console.log('Longest Path: Starting DFS for descent from', node);
-            dfsFindLongestPath(node, 0, new Set([node]), graph.adj);
-            // Find longest path in ascent (child to parent)
-            console.log('Longest Path: Starting DFS for ascent from', node);
-            dfsFindLongestPath(node, 0, new Set([node]), graph.reverseAdj);
+        const memo = new Map();
+
+        function dfs(nodeId, visited) {
+            if (visited.has(nodeId)) { // Cycle detected
+                return 0;
+            }
+            if (memo.has(nodeId)) {
+                return memo.get(nodeId);
+            }
+
+            visited.add(nodeId);
+
+            const children = parentToChildAdj.get(nodeId) || [];
+            let maxDepth = 0;
+            for (const childId of children) {
+                maxDepth = Math.max(maxDepth, 1 + dfs(childId, visited));
+            }
+
+            visited.delete(nodeId); // Backtrack
+            memo.set(nodeId, maxDepth);
+            return maxDepth;
+        }
+
+        let overallMaxDepth = 0;
+        nodes.forEach(nodeId => {
+            overallMaxDepth = Math.max(overallMaxDepth, dfs(nodeId, new Set()));
         });
-        console.log('calculateLongestPath: Finished. Max path length found:', maxPathLength);
-        return maxPathLength;
+
+        return overallMaxDepth;
     }
 
     function calculateAverageDistance(graph) {
@@ -592,6 +595,13 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="report-section-content">
                 <h3>Summary</h3>
                 <p><strong>Total Individuals Processed:</strong> ${report.totalIndividuals}</p>
+                <p><strong>Total Families Processed:</strong> ${report.totalFamilies}</p>
+
+                <h3>General Statistics</h3>
+                <p><strong>Gender Distribution:</strong> Male: ${report.genderCounts.M}, Female: ${report.genderCounts.F}, Unknown: ${report.genderCounts.U}</p>
+                <p><strong>Average Children per Family:</strong> ${report.avgChildrenPerFamily.toFixed(2)}</p>
+                <p><strong>Individuals with No Known Parents (Roots):</strong> ${report.rootIndividualsCount}</p>
+                <p><strong>Individuals with No Children (Leaves):</strong> ${report.leafIndividualsCount}</p>
 
                 <h3>Graph Theory Statistics</h3>
                 <p>
@@ -607,9 +617,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     </span>
                 </p>
                 <p>
-                    <strong>Longest Path (Approximation):</strong>
-                    <span class="tooltip">${report.longestPath}
-                        <span class="tooltiptext">The maximum number of unique relationships in a single, non-repeating chain of individuals within the family tree. This is an approximation for general graphs.</span>
+                    <strong>Maximum Generational Depth:</strong>
+                    <span class="tooltip">${report.maxGenerationalDepth}
+                        <span class="tooltiptext">The longest chain of parent-child relationships found in the tree.</span>
                     </span>
                 </p>
                 <p>
